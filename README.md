@@ -88,8 +88,10 @@ WebSocket         Celery Queue
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/pulsenotify.git
-cd pulsenotify
+git clone https://github.com/yourusername/Real-Time-Notification-Service
+.git
+cd Real-Time-Notification-Service
+
 
 # Start all services
 docker-compose up --build
