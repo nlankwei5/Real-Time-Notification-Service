@@ -3,6 +3,7 @@ from .serializers import EventSerializer
 from .models import Event
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
+from .service import publish_event
 
 # Create your views here.
 
@@ -18,8 +19,8 @@ class EventCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = self.request.user
         if user.is_authenticated:
-            serializer.save(actor= user)
+            event = serializer.save(actor= user)
         else:
-            serializer.save()
-
-
+            event = serializer.save()
+        
+        publish_event(event)
