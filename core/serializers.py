@@ -14,7 +14,7 @@ class EventSerializer(serializers.ModelSerializer):
         actor = data.get('actor')
         source = data.get('source')
 
-        if not actor or not source:
+        if not actor and not source:
             raise serializers.ValidationError('No user or source ingested')
     
         return data
