@@ -117,3 +117,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+
+KAFKA_BOOTSTRAP_SERVERS = ['localhost:19092']
+KAFKA_TOPICS = ['events']
+KAFKA_CONSUMER_GROUP = 'my-notifications-group'
