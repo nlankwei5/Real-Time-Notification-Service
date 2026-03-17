@@ -18,7 +18,7 @@ CHANNELS = [
 class Event(models.Model):
 
     actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    source = models.CharField(max_length=50, blank=True)
+    source = models.CharField(max_length=50, blank=True, null=True)
     event_type = models.CharField(max_length=20, choices=EVENT_TYPE)
     object_type = models.CharField(max_length=50)
     object_id = models.IntegerField()

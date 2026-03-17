@@ -11,8 +11,10 @@ class EventSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at', 'actor']
 
     def validate(self, data):
-        actor = data.get('actor')
         source = data.get('source')
+
+        request = self.context.get('request')
+        actor = request.user if request and request.user.is_authenticated else None
 
         if not actor and not source:
             raise serializers.ValidationError('No user or source ingested')
