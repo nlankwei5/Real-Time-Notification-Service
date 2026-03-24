@@ -13,3 +13,30 @@ class EventAdmin(admin.ModelAdmin):
         'object_id',
         'created_at',
     ]
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = [
+        'user',
+        'event', 
+        'read_at', 
+        'created_at',
+    ]
+@admin.register(NotificationPreference)
+class NotificationPreferenceAdmin(admin.ModelAdmin):
+    list_display = [
+        'user',
+        'event_type', 
+        'channel', 
+        'enabled',
+    ]
+@admin.register(NotificationDelivery)
+class NotificationDeliveryAdmin(admin.ModelAdmin):
+    list_display = [
+        'notification',
+        'channel', 
+        'status', 
+        'sent_at',
+        'retry_count',
+        'failure_reason', 
+    ]
+    
