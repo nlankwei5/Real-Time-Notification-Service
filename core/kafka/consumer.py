@@ -24,6 +24,13 @@ async def consume_messages():
                 event_type=event_type
             ).values_list('user', flat=True)))()
             print("users to notify: ", result)
+            event = await sync_to_async(lambda: Event.objects.get(id=data['id']))()
+            for user in result:
+                notification = await sync_to_async(lambda u=user: Notification.objects.create(
+                    user_id= u, 
+                    event = event,
+                ))()
+            
     finally:
         await consumer.stop()
 
