@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApexFlow — Traffic Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --red: #ff3b3b;
+    --red-dim: rgba(255,59,59,0.15);
+    --amber: #ffaa00;
+    --amber-dim: rgba(255,170,0,0.15);
+    --green: #00e676;
+    --green-dim: rgba(0,230,118,0.12);
+    --blue: #2979ff;
+    --blue-dim: rgba(41,121,255,0.12);
+    --text: #e8eaed;
+    --text2: #9aa0ac;
+    --text3: #5a6270;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Barlow', sans-serif;
+    --cond: 'Barlow Condensed', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SCAN LINE EFFECT */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+    gap: 3px;
+    padding: 2px;
+  }
+
+  .logo-mark span {
+    border-radius: 2px;
+    display: block;
+  }
+
+  .logo-mark span:nth-child(1) { background: var(--red); }
+  .logo-mark span:nth-child(2) { background: var(--amber); }
+  .logo-mark span:nth-child(3) { background: var(--green); }
+
+  .logo-text {
+    font-family: var(--cond);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .logo-text span {
+    color: var(--text3);
+    font-weight: 400;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+  }
+
+  .ws-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .ws-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+  }
+
+  .ws-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .ws-dot.error { background: var(--red); }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 56px);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .stat {
+    flex: 1;
+    padding: 10px 1.5rem;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-icon {
+    font-size: 16px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1px;
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  /* MAIN AREA */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  /* INTERSECTION VISUAL */
+  .intersection-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  .intersection-wrap::before {
+    content: 'INTERSECTION — ZONE A4';
+    position: absolute;
+    top: 1rem;
+    left: 1.5rem;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+  }
+
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+  }
+
+  .intersection-svg {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* EVENT CONTROL PANEL */
+  .control-panel {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .panel-header {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .event-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .event-btn {
+    padding: 10px 8px;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    background: var(--surface2);
+    color: var(--text2);
+    font-family: var(--cond);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .event-btn:hover {
+    border-color: var(--btn-color);
+    color: var(--btn-color);
+    background: var(--btn-dim);
+  }
+
+  .event-btn:active { transform: scale(0.97); }
+
+  .event-btn.firing { animation: fire-pulse 0.4s ease; }
+
+  @keyframes fire-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); box-shadow: 0 0 20px var(--btn-color); }
+    100% { transform: scale(1); }
+  }
+
+  .event-btn .btn-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .event-btn .btn-label { line-height: 1.2; text-align: center; }
+
+  /* SIDEBAR — NOTIFICATION FEED */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .sidebar-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .feed-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .notification-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .notification-feed::-webkit-scrollbar { width: 3px; }
+  .notification-feed::-webkit-scrollbar-track { background: transparent; }
+  .notification-feed::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .notif-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--notif-color);
+    border-radius: 6px;
+    padding: 10px 12px;
+    animation: slide-in 0.3s ease;
+    cursor: default;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .notif-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .notif-type {
+    font-family: var(--cond);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--notif-color);
+  }
+
+  .notif-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  .notif-body {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+
+  .notif-id {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  .empty-feed {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: center;
+    gap: 8px;
+    padding: 2rem;
+  }
+
+  .empty-feed svg { opacity: 0.3; }
+
+  /* SIDEBAR FOOTER */
+  .sidebar-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .footer-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  .clear-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .clear-btn:hover { border-color: var(--border2); color: var(--text2); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+    transition: transform 0.3s ease;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* TRAFFIC LIGHT ANIMATION */
+  .tl-light { transition: opacity 0.4s; }
+  .tl-light.off { opacity: 0.12; }
+  .tl-light.on { opacity: 1; }
+
+  .pulse-ring {
+    transform-origin: center;
+    animation: pulse-ring 1.5s ease infinite;
+    opacity: 0;
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  /* API CONFIG */
+  .config-bar {
+    padding: 6px 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+  }
+
+  .config-bar label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  .config-bar input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    outline: none;
+    max-width: 280px;
+  }
+
+  .config-bar input:focus { border-color: var(--blue); }
+
+  .connect-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--blue-dim);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .connect-btn:hover { background: rgba(41,121,255,0.25); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="logo-text">ApexFlow <span>/ Traffic Command</span></div>
+  </div>
+  <div class="header-meta">
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="ws-status">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-label">disconnected</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-icon" style="background:var(--red-dim); color:var(--red);">▲</div>
+      <div>
+        <div class="stat-label">Events Fired</div>
+        <div class="stat-value" style="color:var(--red);" id="stat-events">0</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon" style="background:var(--green-dim); color:var(--green);">✓</div>
+      <div>
+        <div class="stat-label">Notifications</div>
+        <div class="stat-value" style="color:var(--green);" id="stat-notifs">0</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon" style="background:var(--amber-dim); color:var(--amber);">⚡</div>
+      <div>
+        <div class="stat-label">Active Alerts</div>
+        <div class="stat-value" style="color:var(--amber);" id="stat-alerts">0</div>
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon" style="background:var(--blue-dim); color:var(--blue);">◉</div>
+      <div>
+        <div class="stat-label">Intersections</div>
+        <div class="stat-value" style="color:var(--blue);">4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="config-bar">
+      <label>Backend URL</label>
+      <input type="text" id="api-url" value="http://localhost:8000" placeholder="http://localhost:8000" />
+      <label>WS</label>
+      <input type="text" id="ws-url" value="ws://localhost:8000/ws/notifications/" placeholder="ws://localhost:8000/ws/notifications/" style="max-width:240px;" />
+      <button class="connect-btn" onclick="connectWS()">Connect WS</button>
+    </div>
+
+    <div class="intersection-wrap">
+      <div class="grid-bg"></div>
+      <svg class="intersection-svg" id="intersection-svg" width="520" height="360" viewBox="0 0 520 360">
+
+        <!-- ROADS -->
+        <rect x="200" y="0" width="120" height="360" fill="#1a1e24"/>
+        <rect x="0" y="130" width="520" height="100" fill="#1a1e24"/>
+
+        <!-- ROAD MARKINGS -->
+        <line x1="260" y1="0" x2="260" y2="120" stroke="#3a3f48" stroke-width="2" stroke-dasharray="16,12"/>
+        <line x1="260" y1="240" x2="260" y2="360" stroke="#3a3f48" stroke-width="2" stroke-dasharray="16,12"/>
+        <line x1="0" y1="180" x2="188" y2="180" stroke="#3a3f48" stroke-width="2" stroke-dasharray="16,12"/>
+        <line x1="332" y1="180" x2="520" y2="180" stroke="#3a3f48" stroke-width="2" stroke-dasharray="16,12"/>
+
+        <!-- INTERSECTION BOX -->
+        <rect x="200" y="130" width="120" height="100" fill="#161a20"/>
+        <rect x="200" y="130" width="120" height="100" fill="none" stroke="#ffaa00" stroke-width="1" stroke-dasharray="8,6" opacity="0.3"/>
+
+        <!-- STOP LINES -->
+        <line x1="200" y1="128" x2="200" y2="232" stroke="white" stroke-width="2" opacity="0.6"/>
+        <line x1="320" y1="128" x2="320" y2="232" stroke="white" stroke-width="2" opacity="0.6"/>
+        <line x1="202" y1="130" x2="318" y2="130" stroke="white" stroke-width="2" opacity="0.6"/>
+        <line x1="202" y1="230" x2="318" y2="230" stroke="white" stroke-width="2" opacity="0.6"/>
+
+        <!-- ZEBRA CROSSINGS -->
+        <g opacity="0.4">
+          <rect x="200" y="110" width="16" height="18" fill="white"/>
+          <rect x="222" y="110" width="16" height="18" fill="white"/>
+          <rect x="244" y="110" width="16" height="18" fill="white"/>
+          <rect x="266" y="110" width="16" height="18" fill="white"/>
+          <rect x="288" y="110" width="16" height="18" fill="white"/>
+          <rect x="200" y="232" width="16" height="18" fill="white"/>
+          <rect x="222" y="232" width="16" height="18" fill="white"/>
+          <rect x="244" y="232" width="16" height="18" fill="white"/>
+          <rect x="266" y="232" width="16" height="18" fill="white"/>
+          <rect x="288" y="232" width="16" height="18" fill="white"/>
+        </g>
+
+        <!-- TRAFFIC LIGHT — NORTH -->
+        <g id="tl-north" transform="translate(178, 68)">
+          <rect x="0" y="0" width="18" height="52" rx="4" fill="#0d1117" stroke="#2a2f38" stroke-width="1"/>
+          <circle class="tl-light off" id="tl-north-red" cx="9" cy="11" r="6" fill="#ff3b3b"/>
+          <circle class="tl-light off" id="tl-north-amber" cx="9" cy="26" r="6" fill="#ffaa00"/>
+          <circle class="tl-light on" id="tl-north-green" cx="9" cy="41" r="6" fill="#00e676"/>
+          <line x1="18" y1="26" x2="28" y2="26" stroke="#2a2f38" stroke-width="1.5"/>
+        </g>
+
+        <!-- TRAFFIC LIGHT — SOUTH -->
+        <g id="tl-south" transform="translate(324, 240)">
+          <rect x="0" y="0" width="18" height="52" rx="4" fill="#0d1117" stroke="#2a2f38" stroke-width="1"/>
+          <circle class="tl-light off" id="tl-south-red" cx="9" cy="11" r="6" fill="#ff3b3b"/>
+          <circle class="tl-light off" id="tl-south-amber" cx="9" cy="26" r="6" fill="#ffaa00"/>
+          <circle class="tl-light on" id="tl-south-green" cx="9" cy="41" r="6" fill="#00e676"/>
+          <line x1="0" y1="26" x2="-10" y2="26" stroke="#2a2f38" stroke-width="1.5"/>
+        </g>
+
+        <!-- TRAFFIC LIGHT — EAST -->
+        <g id="tl-east" transform="translate(334, 110)">
+          <rect x="0" y="0" width="52" height="18" rx="4" fill="#0d1117" stroke="#2a2f38" stroke-width="1"/>
+          <circle class="tl-light off" id="tl-east-red" cx="11" cy="9" r="6" fill="#ff3b3b"/>
+          <circle class="tl-light off" id="tl-east-amber" cx="26" cy="9" r="6" fill="#ffaa00"/>
+          <circle class="tl-light on" id="tl-east-green" cx="41" cy="9" r="6" fill="#00e676"/>
+          <line x1="26" y1="18" x2="26" y2="28" stroke="#2a2f38" stroke-width="1.5"/>
+        </g>
+
+        <!-- TRAFFIC LIGHT — WEST -->
+        <g id="tl-west" transform="translate(134, 232)">
+          <rect x="0" y="0" width="52" height="18" rx="4" fill="#0d1117" stroke="#2a2f38" stroke-width="1"/>
+          <circle class="tl-light off" id="tl-west-red" cx="11" cy="9" r="6" fill="#ff3b3b"/>
+          <circle class="tl-light off" id="tl-west-amber" cx="26" cy="9" r="6" fill="#ffaa00"/>
+          <circle class="tl-light on" id="tl-west-green" cx="41" cy="9" r="6" fill="#00e676"/>
+          <line x1="26" y1="0" x2="26" y2="-10" stroke="#2a2f38" stroke-width="1.5"/>
+        </g>
+
+        <!-- VEHICLES (animated) -->
+        <rect id="car-n" x="232" y="20" width="20" height="32" rx="4" fill="#2979ff" opacity="0.7">
+          <animateTransform attributeName="transform" type="translate" from="0,0" to="0,90" dur="4s" repeatCount="indefinite" begin="0s"/>
+        </rect>
+        <rect id="car-s" x="268" y="340" width="20" height="32" rx="4" fill="#e040fb" opacity="0.7">
+          <animateTransform attributeName="transform" type="translate" from="0,0" to="0,-90" dur="5s" repeatCount="indefinite" begin="2s"/>
+        </rect>
+        <rect id="car-e" x="340" y="146" width="32" height="20" rx="4" fill="#00e5ff" opacity="0.7">
+          <animateTransform attributeName="transform" type="translate" from="0,0" to="-90,0" dur="6s" repeatCount="indefinite" begin="1s"/>
+        </rect>
+
+        <!-- DIRECTION LABELS -->
+        <text x="260" y="18" text-anchor="middle" fill="#5a6270" font-family="Share Tech Mono" font-size="9" letter-spacing="2">NORTH</text>
+        <text x="260" y="352" text-anchor="middle" fill="#5a6270" font-family="Share Tech Mono" font-size="9" letter-spacing="2">SOUTH</text>
+        <text x="8" y="183" fill="#5a6270" font-family="Share Tech Mono" font-size="9" letter-spacing="2">WEST</text>
+        <text x="472" y="183" fill="#5a6270" font-family="Share Tech Mono" font-size="9" letter-spacing="2">EAST</text>
+
+        <!-- PULSE RINGS for alerts -->
+        <circle class="pulse-ring" id="pulse-congestion" cx="260" cy="180" r="40" fill="none" stroke="#ffaa00" stroke-width="2" style="display:none"/>
+        <circle class="pulse-ring" id="pulse-accident" cx="260" cy="180" r="40" fill="none" stroke="#ff3b3b" stroke-width="2" style="display:none"/>
+
+      </svg>
+    </div>
+
+    <div class="control-panel">
+      <div class="panel-header">Fire Event</div>
+      <div class="event-grid">
+        <button class="event-btn" style="--btn-color:var(--amber);--btn-dim:var(--amber-dim);"
+          onclick="fireEvent('CONGESTION', 'intersection', 1, this)">
+          <span class="btn-icon">▲▲</span>
+          <span class="btn-label">Congestion Detected</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--red);--btn-dim:var(--red-dim);"
+          onclick="fireEvent('ACCIDENT', 'intersection', 1, this)">
+          <span class="btn-icon">⚠</span>
+          <span class="btn-label">Accident Reported</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--red);--btn-dim:var(--red-dim);"
+          onclick="fireEvent('MALFUNCTION', 'traffic_light', 2, this)">
+          <span class="btn-icon">✕</span>
+          <span class="btn-label">Light Malfunction</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--green);--btn-dim:var(--green-dim);"
+          onclick="fireEvent('FOLLOW', 'route', 3, this)">
+          <span class="btn-icon">◎</span>
+          <span class="btn-label">Route Cleared</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--blue);--btn-dim:var(--blue-dim);"
+          onclick="fireEvent('PAYMENT', 'toll_gate', 4, this)">
+          <span class="btn-icon">◈</span>
+          <span class="btn-label">Toll Gate Event</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--amber);--btn-dim:var(--amber-dim);"
+          onclick="fireEvent('COMMENT', 'sensor', 5, this)">
+          <span class="btn-icon">◉</span>
+          <span class="btn-label">Sensor Update</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--green);--btn-dim:var(--green-dim);"
+          onclick="fireEvent('LIKE', 'zone', 1, this)">
+          <span class="btn-icon">★</span>
+          <span class="btn-label">Zone All Clear</span>
+        </button>
+        <button class="event-btn" style="--btn-color:var(--red);--btn-dim:var(--red-dim);"
+          onclick="fireEvent('ACCIDENT', 'pedestrian', 6, this)">
+          <span class="btn-icon">⬡</span>
+          <span class="btn-label">Pedestrian Alert</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Live Notification Feed</div>
+      <div class="feed-count" id="feed-count">0 events</div>
+    </div>
+
+    <div class="notification-feed" id="feed">
+      <div class="empty-feed" id="empty-state">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect x="8" y="4" width="24" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="13" y1="13" x2="27" y2="13" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="13" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="13" y1="25" x2="21" y2="25" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <div>No notifications yet</div>
+        <div style="font-size:10px; opacity:0.6;">Fire an event or connect WebSocket</div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="footer-meta" id="last-event">—</div>
+      <button class="clear-btn" onclick="clearFeed()">Clear</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let ws = null;
+  let eventCount = 0;
+  let notifCount = 0;
+  let alertCount = 0;
+  const feed = document.getElementById('feed');
+  const emptyState = document.getElementById('empty-state');
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // Stats
+  function updateStats() {
+    document.getElementById('stat-events').textContent = eventCount;
+    document.getElementById('stat-notifs').textContent = notifCount;
+    document.getElementById('stat-alerts').textContent = alertCount;
+    document.getElementById('feed-count').textContent = notifCount + ' events';
+  }
+
+  // Traffic light state
+  const tlState = { north: 'green', south: 'green', east: 'green', west: 'green' };
+
+  function setTrafficLight(direction, state) {
+    ['red','amber','green'].forEach(color => {
+      const el = document.getElementById(`tl-${direction}-${color}`);
+      if (el) {
+        el.classList.remove('on','off');
+        el.classList.add(color === state ? 'on' : 'off');
+      }
+    });
+    tlState[direction] = state;
+  }
+
+  function flashAlert(type) {
+    const el = document.getElementById(`pulse-${type}`);
+    if (!el) return;
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    let count = 0;
+    const interval = setInterval(() => {
+      count++;
+      if (count > 3) { clearInterval(interval); el.style.display = 'none'; }
+    }, 500);
+  }
+
+  // React to event types on the SVG
+  function reactToEvent(eventType) {
+    if (eventType === 'CONGESTION') {
+      setTrafficLight('north', 'amber');
+      setTrafficLight('south', 'amber');
+      flashAlert('congestion');
+      setTimeout(() => { setTrafficLight('north','green'); setTrafficLight('south','green'); }, 4000);
+    } else if (eventType === 'ACCIDENT') {
+      setTrafficLight('north', 'red');
+      setTrafficLight('south', 'red');
+      setTrafficLight('east', 'red');
+      setTrafficLight('west', 'red');
+      flashAlert('accident');
+      setTimeout(() => {
+        setTrafficLight('north','green');
+        setTrafficLight('south','green');
+        setTrafficLight('east','green');
+        setTrafficLight('west','green');
+      }, 5000);
+    } else if (eventType === 'MALFUNCTION') {
+      setTrafficLight('east', 'amber');
+      setTrafficLight('west', 'amber');
+      setTimeout(() => { setTrafficLight('east','red'); setTrafficLight('west','red'); }, 1000);
+    } else if (eventType === 'FOLLOW' || eventType === 'LIKE') {
+      setTrafficLight('north','green');
+      setTrafficLight('south','green');
+      setTrafficLight('east','green');
+      setTrafficLight('west','green');
+    }
+  }
+
+  // Notification color map
+  const colorMap = {
+    'CONGESTION': '#ffaa00',
+    'ACCIDENT': '#ff3b3b',
+    'MALFUNCTION': '#ff3b3b',
+    'FOLLOW': '#00e676',
+    'LIKE': '#00e676',
+    'PAYMENT': '#2979ff',
+    'COMMENT': '#e040fb',
+    'DEFAULT': '#9aa0ac',
+  };
+
+  const labelMap = {
+    'CONGESTION': 'Congestion Detected',
+    'ACCIDENT': 'Accident Reported',
+    'MALFUNCTION': 'Light Malfunction',
+    'FOLLOW': 'Route Cleared',
+    'LIKE': 'Zone All Clear',
+    'PAYMENT': 'Toll Gate Event',
+    'COMMENT': 'Sensor Update',
+  };
+
+  function addNotification(data, fromWS = false) {
+    const empty = document.getElementById('empty-state');
+    if (empty) empty.remove();
+
+    notifCount++;
+    if (['ACCIDENT','MALFUNCTION','CONGESTION'].includes(data.event_type || data.type)) alertCount++;
+
+    const color = colorMap[data.event_type || data.type] || colorMap.DEFAULT;
+    const label = labelMap[data.event_type || data.type] || (data.event_type || data.type || 'EVENT');
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+
+    const card = document.createElement('div');
+    card.className = 'notif-card';
+    card.style.setProperty('--notif-color', color);
+
+    const source = fromWS ? 'via WebSocket' : 'local event';
+    const idStr = data.id ? `#${data.id}` : '';
+    const objInfo = data.object_type ? `${data.object_type} ${data.object_id || ''}` : (data.source || 'system');
+
+    card.innerHTML = `
+      <div class="notif-top">
+        <div class="notif-type">${label}</div>
+        <div class="notif-time">${time}</div>
+      </div>
+      <div class="notif-body">${objInfo} · ${source}</div>
+      ${idStr ? `<div class="notif-id">notif ${idStr}</div>` : ''}
+    `;
+
+    feed.insertBefore(card, feed.firstChild);
+    document.getElementById('last-event').textContent = `Last: ${time}`;
+    updateStats();
+  }
+
+  // Fire event to backend
+  async function fireEvent(eventType, objectType, objectId, btn) {
+    const apiUrl = document.getElementById('api-url').value.replace(/\/$/, '');
+    btn.classList.add('firing');
+    setTimeout(() => btn.classList.remove('firing'), 400);
+
+    eventCount++;
+    reactToEvent(eventType);
+
+    try {
+      const res = await fetch(`${apiUrl}/api/events/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: eventType,
+          object_type: objectType,
+          object_id: objectId,
+          source: 'traffic-control-ui'
+        })
+      });
+
+      if (res.ok) {
+        showToast(`Event fired — ${eventType}`);
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          const data = await res.json();
+          addNotification({ ...data, event_type: eventType, object_type: objectType, object_id: objectId });
+        }
+      } else {
+        const err = await res.json();
+        showToast(`Error: ${JSON.stringify(err)}`);
+      }
+    } catch (e) {
+      showToast(`Could not reach backend — ${e.message}`);
+      addNotification({ event_type: eventType, object_type: objectType, object_id: objectId, source: 'offline-demo' });
+    }
+
+    updateStats();
+  }
+
+  // WebSocket
+  function connectWS() {
+    const wsUrl = document.getElementById('ws-url').value;
+    if (ws) ws.close();
+
+    const dot = document.getElementById('ws-dot');
+    const label = document.getElementById('ws-label');
+
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        dot.className = 'ws-dot connected';
+        label.textContent = 'connected';
+        showToast('WebSocket connected');
+      };
+
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          addNotification(data, true);
+          if (data.event_type) reactToEvent(data.event_type);
+        } catch { }
+      };
+
+      ws.onclose = () => {
+        dot.className = 'ws-dot';
+        label.textContent = 'disconnected';
+        ws = null;
+      };
+
+      ws.onerror = () => {
+        dot.className = 'ws-dot error';
+        label.textContent = 'error';
+        showToast('WebSocket connection failed');
+      };
+    } catch (e) {
+      showToast(`WebSocket error: ${e.message}`);
+    }
+  }
+
+  // Clear feed
+  function clearFeed() {
+    feed.innerHTML = `<div class="empty-feed" id="empty-state">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+        <rect x="8" y="4" width="24" height="32" rx="3" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="13" y1="13" x2="27" y2="13" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="13" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="13" y1="25" x2="21" y2="25" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <div>No notifications yet</div>
+      <div style="font-size:10px; opacity:0.6;">Fire an event or connect WebSocket</div>
+    </div>`;
+    notifCount = 0; alertCount = 0;
+    document.getElementById('last-event').textContent = '—';
+    updateStats();
+  }
+</script>
+</body>
+</html>
