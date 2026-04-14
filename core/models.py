@@ -8,6 +8,11 @@ EVENT_TYPE = (
     ("LIKE", "Like"),
     ("PAYMENT", "Payment"),
     ("COMMENT", "Comment"),
+    ("ACCIDENT", "Accident"),
+    ("CONGESTION", "Congestion"),
+    ("MALFUNCTION", "Malfunction"),
+
+
 )
 
 CHANNELS = [

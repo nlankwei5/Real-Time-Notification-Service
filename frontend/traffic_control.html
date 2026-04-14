@@ -604,7 +604,7 @@
       <label>Backend URL</label>
       <input type="text" id="api-url" value="http://localhost:8000" placeholder="http://localhost:8000" />
       <label>WS</label>
-      <input type="text" id="ws-url" value="ws://localhost:8000/ws/notifications/" placeholder="ws://localhost:8000/ws/notifications/" style="max-width:240px;" />
+      <input type="text" id="ws-url" value="ws://127.0.0.1:8080/ws/notifications/" placeholder="ws://127.0.0.1:8000/ws/notifications/" style="max-width:240px;" />
       <button class="connect-btn" onclick="connectWS()">Connect WS</button>
     </div>
 
@@ -843,8 +843,8 @@
   // React to event types on the SVG
   function reactToEvent(eventType) {
     if (eventType === 'CONGESTION') {
-      setTrafficLight('north', 'amber');
-      setTrafficLight('south', 'amber');
+      setTrafficLight('north', 'green');
+      setTrafficLight('south', 'red');
       flashAlert('congestion');
       setTimeout(() => { setTrafficLight('north','green'); setTrafficLight('south','green'); }, 4000);
     } else if (eventType === 'ACCIDENT') {
@@ -858,7 +858,7 @@
         setTrafficLight('south','green');
         setTrafficLight('east','green');
         setTrafficLight('west','green');
-      }, 5000);
+      }, 9000);
     } else if (eventType === 'MALFUNCTION') {
       setTrafficLight('east', 'amber');
       setTrafficLight('west', 'amber');

@@ -46,14 +46,17 @@ async def consume_messages():
                         "event_id": event.id,
                         "event_type": event.event_type,
                 }
+                # Send to specific user group
                 await channel_layer.group_send(
-                    f"user_{user}",  
-                    {
-                        "type": "send_notification", 
-                        "data": notification_data, 
-                    }
+                    f"user_{user}",
+                    {"type": "send_notification", "data": notification_data}
                 )
-            
+
+                # Also send to open connections group
+                await channel_layer.group_send(
+                    "notifications",
+                    {"type": "send_notification", "data": notification_data}
+                )
     finally:
         await consumer.stop()
 
