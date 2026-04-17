@@ -44,7 +44,7 @@ WebSocket         Celery Queue
 - **Delivery Guarantees** — Celery handles retry logic with exponential backoff for failed deliveries
 - **Per-User Preferences** — users can opt in or out per notification type
 - **Notification History** — all notifications persisted in PostgreSQL and queryable via API
-- **Dead Letter Queue** — undeliverable messages after max retries are logged separately for inspection
+  
 
 
 ---
@@ -97,10 +97,21 @@ cd Real-Time-Notification-Service
 docker-compose up --build
 
 # Run migrations
-docker-compose exec web python manage.py migrate
+python manage.py migrate
 
 # Create superuser
-docker-compose exec web python manage.py createsuperuser
+python manage.py createsuperuser
+
+# Run server
+python manage.py runserver
+
+# Run Kafka Consumer
+python manage.py shell -c "import asyncio; from core.kafka.consumer import consume_messages; asyncio.run(consume_messages())"
+
+# Run Frontend 
+cd frontend 
+python -m http.server 8002
+
 ```
 
 
@@ -110,7 +121,6 @@ docker-compose exec web python manage.py createsuperuser
 - Event-driven architecture with Kafka as the central message bus
 - Async WebSocket handling with Django Channels
 - Reliable task processing with Celery and Redis
-- Fault tolerance via DLQ and exponential backoff
 - Stateful user tracking with Redis
 - Infrastructure as code with Terraform
 - Automated deployment pipeline with GitHub Actions
